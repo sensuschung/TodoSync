@@ -256,3 +256,5 @@ class Program
         logger.Log(message);
     }
 }
+error = true;
+            Environment.ExitCode = 1;
