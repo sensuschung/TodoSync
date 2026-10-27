@@ -77,7 +77,7 @@ namespace TodoSynchronizer.Core.Services
         public static DidaTaskList AddTaskList(string name)
         {
             var query = new Dictionary<string, string>();
-            var postjson = "{"name":"{1}"}".Replace("{1}", name);
+            var postjson = "{\"name\":\"{1}\"}".Replace("{1}", name);
 
             var res = Web.Post(Client, $"/api/v2/project", postjson);
             if (!res.success)
