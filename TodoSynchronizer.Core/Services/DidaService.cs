@@ -30,6 +30,22 @@ namespace TodoSynchronizer.Core.Services
                 BaseAddress = new Uri("https://api.dida365.com")
             };
 
+            // The V2 session API expects web-client metadata on login and subsequent requests.
+            Client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:95.0) Gecko/20100101 Firefox/95.0");
+            var deviceInfo = new
+            {
+                platform = "web",
+                os = "Linux",
+                device = "Firefox 95.0",
+                name = "TodoSynchronizer",
+                version = 4531,
+                id = Guid.NewGuid().ToString("N").Substring(0, 24),
+                channel = "website",
+                campaign = "",
+                websocket = ""
+            };
+            Client.DefaultRequestHeaders.Add("X-Device", JsonConvert.SerializeObject(deviceInfo));
+
             var res = Web.Post(Client, "/api/v2/user/signon?wc=true&remember=true", info);
 
             if (!res.success)
