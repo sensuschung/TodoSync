@@ -1,4 +1,4 @@
-﻿using Microsoft.Graph;
+using Microsoft.Graph;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -36,9 +36,13 @@ namespace TodoSynchronizer.Core.Services
                 return new CommonResult(false, res.message);
             if (res.code == System.Net.HttpStatusCode.Unauthorized)
                 return new CommonResult(false, "手机号或密码错误");
+            if (res.code != System.Net.HttpStatusCode.OK)
+                return new CommonResult(false, $"滴答清单登录失败，HTTP 状态码：{(int)res.code} ({res.code})");
             try
             {
                 var json = JsonConvert.DeserializeObject<LoginDto>(res.result);
+                if (string.IsNullOrWhiteSpace(json?.Token))
+                    return new CommonResult(false, "滴答清单登录失败：接口未返回有效 Token");
                 Client.DefaultRequestHeaders.Add("Cookie", $"t={json.Token}");
                 return new CommonResult(true, "登录成功");
             }
@@ -73,7 +77,7 @@ namespace TodoSynchronizer.Core.Services
         public static DidaTaskList AddTaskList(string name)
         {
             var query = new Dictionary<string, string>();
-            var postjson = "{\"name\":\"{1}\"}".Replace("{1}", name);
+            var postjson = "{"name":"{1}"}".Replace("{1}", name);
 
             var res = Web.Post(Client, $"/api/v2/project", postjson);
             if (!res.success)
@@ -102,12 +106,12 @@ namespace TodoSynchronizer.Core.Services
                 throw new Exception(res.message);
 
             if (res.code != System.Net.HttpStatusCode.OK)
-                return null;
+                throw new Exception($"滴答清单读取失败，HTTP 状态码：{(int)res.code} ({res.code})");
 
             try
             {
                 var json = JsonConvert.DeserializeObject<DidaBatchCheckDto>(res.result);
-                return json;
+                return json ?? throw new Exception("滴答清单接口返回了空数据");
             }
             catch (Exception ex)
             {
