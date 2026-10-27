@@ -248,6 +248,7 @@ class Program
         if (state.State == SyncStateEnum.Error && !SyncConfig.Default.IgnoreErrors)
         {
             error = true;
+            Environment.ExitCode = 1;
         }
     }
 
@@ -256,5 +257,3 @@ class Program
         logger.Log(message);
     }
 }
-error = true;
-            Environment.ExitCode = 1;
