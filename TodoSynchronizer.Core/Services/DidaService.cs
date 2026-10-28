@@ -52,7 +52,7 @@ namespace TodoSynchronizer.Core.Services
                 os = "Linux",
                 device = "Firefox 95.0",
                 name = "TodoSynchronizer",
-                version = 6430,
+                version = 8240, // Dida web client version observed on 2026-10-28.
                 id = Guid.NewGuid().ToString("N").Substring(0, 24),
                 channel = "website",
                 campaign = "",
