@@ -46,6 +46,28 @@ namespace TodoSynchronizer.Core.Services
             };
             Client.DefaultRequestHeaders.Add("X-Device", JsonConvert.SerializeObject(deviceInfo));
 
+            try
+            {
+                var credential = JsonConvert.DeserializeAnonymousType(info, new { token = (string)null });
+                if (credential?.token != null)
+                {
+                    if (string.IsNullOrWhiteSpace(credential.token) || credential.token.Any(char.IsWhiteSpace) || credential.token.Contains(";"))
+                        return new CommonResult(false, "滴答会话 token 格式错误：请仅填写 Cookie t 的值");
+                    Client.DefaultRequestHeaders.Add("Cookie", $"t={credential.token}");
+                    var check = Web.Get(Client, "/api/v2/batch/check/0");
+                    if (check.code != System.Net.HttpStatusCode.OK)
+                        return new CommonResult(false, $"滴答会话验证失败，HTTP 状态码：{(int)check.code}；请检查或更新 DIDA_CREDENTIAL 中的 token");
+                    var data = JsonConvert.DeserializeObject<DidaBatchCheckDto>(check.result);
+                    if (data?.ProjectProfiles == null || data.SyncTaskBean?.Update == null)
+                        return new CommonResult(false, "滴答会话验证失败：同步接口未返回有效数据");
+                    return new CommonResult(true, "滴答会话认证成功");
+                }
+            }
+            catch (Exception)
+            {
+                return new CommonResult(false, "滴答会话验证失败：请检查凭据 JSON、会话值或网络；未尝试密码登录");
+            }
+
             var res = Web.Post(Client, "/api/v2/user/signon?wc=true&remember=true", info);
 
             if (!res.success)
