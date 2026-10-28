@@ -25,6 +25,20 @@ namespace TodoSynchronizer.Core.Services
 
         public static CommonResult Login(string info)
         {
+            // Keep the existing credential file format, but send the signon API's username field.
+            try
+            {
+                var credential = JsonConvert.DeserializeAnonymousType(info, new { phone = "", username = "", password = "" });
+                var username = string.IsNullOrWhiteSpace(credential?.username) ? credential?.phone : credential.username;
+                if (string.IsNullOrWhiteSpace(username) || string.IsNullOrEmpty(credential?.password))
+                    return new CommonResult(false, "滴答清单凭据缺少手机号或密码");
+                info = JsonConvert.SerializeObject(new { username, password = credential.password });
+            }
+            catch (JsonException)
+            {
+                return new CommonResult(false, "滴答清单凭据必须是有效的 JSON 对象");
+            }
+
             Client = new HttpClient()
             {
                 BaseAddress = new Uri("https://api.dida365.com")
