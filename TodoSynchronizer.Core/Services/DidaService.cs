@@ -52,7 +52,7 @@ namespace TodoSynchronizer.Core.Services
                 os = "Linux",
                 device = "Firefox 95.0",
                 name = "TodoSynchronizer",
-                version = 4531,
+                version = 6430,
                 id = Guid.NewGuid().ToString("N").Substring(0, 24),
                 channel = "website",
                 campaign = "",
