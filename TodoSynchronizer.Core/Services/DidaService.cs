@@ -60,7 +60,7 @@ namespace TodoSynchronizer.Core.Services
                     var check = Web.Get(Client, "/api/v2/batch/check/0");
                     if (check.code != System.Net.HttpStatusCode.OK)
                         return new CommonResult(false, $"滴答会话验证失败，HTTP 状态码：{(int)check.code}；请检查或更新 DIDA_CREDENTIAL 中的 token");
-                    authStage = "session_json";
+                    authStage = check.result?.TrimStart().StartsWith("<") == true ? "session_html" : "session_json";
                     var data = JsonConvert.DeserializeObject<DidaBatchCheckDto>(check.result);
                     if (data?.ProjectProfiles == null || data.SyncTaskBean?.Update == null)
                         return new CommonResult(false, "滴答会话验证失败：同步接口未返回有效数据");
@@ -69,11 +69,11 @@ namespace TodoSynchronizer.Core.Services
             }
             catch (Exception ex)
             {
-                var cause = ex.GetBaseException();
+                var cause = ex is JsonException ? ex : ex.GetBaseException();
                 var kind = cause is JsonException ? "json_parse" : cause is HttpRequestException ? "network" : cause is TaskCanceledException ? "timeout" : cause is FormatException ? "format" : "unexpected";
                 var field = "unknown";
-                if (cause is JsonSerializationException jsonError)
-                    field = new[] { "projectGroups", "tags", "projectProfiles", "syncTaskBean", "checkPoint", "inboxId" }.FirstOrDefault(name => jsonError.Path == name || jsonError.Path.StartsWith(name + "[") || jsonError.Path.StartsWith(name + ".")) ?? "unknown";
+                var path = (cause as JsonSerializationException)?.Path ?? (cause as JsonReaderException)?.Path ?? "";
+                field = new[] { "projectGroups", "tags", "projectProfiles", "syncTaskBean", "checkPoint", "inboxId" }.FirstOrDefault(name => path == name || path.StartsWith(name + "[") || path.StartsWith(name + ".")) ?? "unknown";
                 // Only fixed categories are logged; exception messages can contain private task data.
                 return new CommonResult(false, $"滴答会话验证失败：阶段={authStage}，类型={kind}，字段={field}；未尝试密码登录");
             }
