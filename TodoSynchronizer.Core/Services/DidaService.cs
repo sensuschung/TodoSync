@@ -64,10 +64,27 @@ namespace TodoSynchronizer.Core.Services
 
             if (!res.success)
                 return new CommonResult(false, res.message);
-            if (res.code == System.Net.HttpStatusCode.Unauthorized)
-                return new CommonResult(false, "手机号或密码错误");
             if (res.code != System.Net.HttpStatusCode.OK)
-                return new CommonResult(false, $"滴答清单登录失败，HTTP 状态码：{(int)res.code} ({res.code})");
+            {
+                var detail = "empty_response";
+                if (!string.IsNullOrWhiteSpace(res.result))
+                {
+                    try
+                    {
+                        var failure = JsonConvert.DeserializeAnonymousType(res.result, new { errorCode = "" });
+                        var code = failure?.errorCode;
+                        var credential = JsonConvert.DeserializeAnonymousType(info, new { username = "", password = "" });
+                        // Log only a short symbolic error code, never the response body or credentials.
+                        detail = !string.IsNullOrEmpty(code) && System.Text.RegularExpressions.Regex.IsMatch(code, "^[a-z][a-z_]{0,63}$") && !code.Contains(credential.username) && !code.Contains(credential.password)
+                            ? code : "json_without_safe_error_code";
+                    }
+                    catch (JsonException)
+                    {
+                        detail = res.result.TrimStart().StartsWith("<") ? "html_response" : "non_json_response";
+                    }
+                }
+                return new CommonResult(false, $"滴答清单登录失败，HTTP 状态码：{(int)res.code} ({res.code})，错误类型：{detail}");
+            }
             try
             {
                 var json = JsonConvert.DeserializeObject<LoginDto>(res.result);
