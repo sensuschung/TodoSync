@@ -25,20 +25,6 @@ namespace TodoSynchronizer.Core.Services
 
         public static CommonResult Login(string info)
         {
-            // Keep the existing credential file format, but send the signon API's username field.
-            try
-            {
-                var credential = JsonConvert.DeserializeAnonymousType(info, new { phone = "", username = "", password = "" });
-                var username = string.IsNullOrWhiteSpace(credential?.username) ? credential?.phone : credential.username;
-                if (string.IsNullOrWhiteSpace(username) || string.IsNullOrEmpty(credential?.password))
-                    return new CommonResult(false, "滴答清单凭据缺少手机号或密码");
-                info = JsonConvert.SerializeObject(new { username, password = credential.password });
-            }
-            catch (JsonException)
-            {
-                return new CommonResult(false, "滴答清单凭据必须是有效的 JSON 对象");
-            }
-
             Client = new HttpClient()
             {
                 BaseAddress = new Uri("https://api.dida365.com")
@@ -73,9 +59,9 @@ namespace TodoSynchronizer.Core.Services
                     {
                         var failure = JsonConvert.DeserializeAnonymousType(res.result, new { errorCode = "" });
                         var code = failure?.errorCode;
-                        var credential = JsonConvert.DeserializeAnonymousType(info, new { username = "", password = "" });
+                        var credential = JsonConvert.DeserializeAnonymousType(info, new { phone = "", password = "" });
                         // Log only a short symbolic error code, never the response body or credentials.
-                        detail = !string.IsNullOrEmpty(code) && System.Text.RegularExpressions.Regex.IsMatch(code, "^[a-z][a-z_]{0,63}$") && !code.Contains(credential.username) && !code.Contains(credential.password)
+                        detail = !string.IsNullOrEmpty(code) && System.Text.RegularExpressions.Regex.IsMatch(code, "^[a-z][a-z_]{0,63}$") && (string.IsNullOrEmpty(credential?.phone) || !code.Contains(credential.phone)) && (string.IsNullOrEmpty(credential?.password) || !code.Contains(credential.password))
                             ? code : "json_without_safe_error_code";
                     }
                     catch (JsonException)
